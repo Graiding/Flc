@@ -1,0 +1,14 @@
+{
+  "name": "FL Прогноз выработки",
+  "short_name": "FL Прогноз",
+  "start_url": "/Flc/filter_calc.html",
+  "display": "standalone",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "description": "Калькулятор прогноза выработки фильтр-прессов",
+  "icons": [{
+    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230a0e14'/><text y='68' x='50' text-anchor='middle' font-size='55' fill='%2300d4ff' font-family='monospace' font-weight='bold'>FL</text></svg>",
+    "sizes": "any",
+    "type": "image/svg+xml"
+  }]
+}
