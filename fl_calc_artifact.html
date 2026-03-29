@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FL Прогноз</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;600;800&display=swap');
+  :root{--bg:#0a0e14;--panel:#111820;--border:#1e2d3d;--cyan:#00d4ff;--green:#00ff88;--yellow:#ffd600;--text:#c8d8e8;--dim:#4a6070}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;min-height:100vh;padding:12px;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,212,255,.03) 39px,rgba(0,212,255,.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,212,255,.03) 39px,rgba(0,212,255,.03) 40px)}
+  header{text-align:center;padding:10px 0 16px;border-bottom:1px solid var(--border);margin-bottom:16px}
+  header h1{font-size:11px;font-weight:300;color:var(--dim);letter-spacing:4px;text-transform:uppercase;font-family:'Share Tech Mono',monospace}
+  header h2{font-size:20px;font-weight:800;color:var(--cyan);letter-spacing:1px;margin-top:3px}
+  .time-row{display:flex;gap:10px;margin-bottom:16px}
+  .time-row .field{flex:1}
+  .field label{display:block;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:5px;font-family:'Share Tech Mono',monospace}
+  input[type="number"],input[type="time"]{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:17px;padding:9px 10px;border-radius:4px;outline:none;transition:border-color .2s;-moz-appearance:textfield}
+  input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none}
+  input:focus{border-color:var(--cyan)}
+  .press-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .press-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .press-header{background:rgba(0,212,255,.07);border-bottom:1px solid var(--border);padding:7px 10px;display:flex;align-items:center;justify-content:space-between}
+  .press-name{font-size:12px;font-weight:800;letter-spacing:1px;color:var(--cyan)}
+  .toggle-btn{width:32px;height:18px;background:var(--border);border-radius:9px;border:none;cursor:pointer;position:relative;transition:background .2s}
+  .toggle-btn.active{background:var(--green)}
+  .toggle-btn::after{content:'';position:absolute;width:12px;height:12px;background:white;border-radius:50%;top:3px;left:3px;transition:transform .2s}
+  .toggle-btn.active::after{transform:translateX(14px)}
+  .press-body{padding:10px;display:flex;flex-direction:column;gap:8px}
+  .press-body.disabled{opacity:.35;pointer-events:none}
+  .press-body .field label{font-size:8px}
+  .press-body input{font-size:15px;padding:7px 9px}
+  .shift-field{border-top:1px solid var(--border);padding-top:8px}
+  .calc-btn{width:100%;background:var(--cyan);color:var(--bg);border:none;font-family:'Exo 2',sans-serif;font-size:15px;font-weight:800;letter-spacing:3px;text-transform:uppercase;padding:13px;border-radius:4px;cursor:pointer;margin-bottom:16px;transition:background .15s,transform .1s}
+  .calc-btn:active{transform:scale(.98);background:#00aacc}
+  .results{display:none;flex-direction:column;gap:10px}
+  .results.visible{display:flex}
+  .result-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .result-card.total{border-color:var(--yellow)}
+  .result-header{background:rgba(0,212,255,.05);border-bottom:1px solid var(--border);padding:6px 12px;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--dim);font-family:'Share Tech Mono',monospace}
+  .result-card.total .result-header{background:rgba(255,214,0,.07);color:var(--yellow);border-color:rgba(255,214,0,.2)}
+  .result-rows{padding:9px 12px;display:flex;flex-direction:column;gap:5px}
+  .result-row{display:flex;justify-content:space-between;align-items:baseline}
+  .result-label{font-size:10px;color:var(--dim);font-family:'Share Tech Mono',monospace;letter-spacing:1px}
+  .result-val{font-size:19px;font-weight:800;font-family:'Share Tech Mono',monospace;color:var(--green)}
+  .result-val.big{font-size:26px;color:var(--yellow)}
+  .result-val .unit{font-size:12px;font-weight:300;color:var(--dim);margin-left:3px}
+  .result-divider{border:none;border-top:1px solid var(--border);margin:3px 0}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>FL — Прогноз выработки</h1>
+  <h2>3530 Filter Press</h2>
+</header>
+
+<div class="time-row">
+  <div class="field">
+    <label>Конец смены</label>
+    <input type="time" id="shift-end" value="20:00">
+  </div>
+  <div class="field">
+    <label>Сейчас</label>
+    <input type="time" id="time-now">
+  </div>
+</div>
+
+<div class="press-grid">
+  <div class="press-card">
+    <div class="press-header">
+      <span class="press-name">FL-110</span>
+      <button class="toggle-btn active" id="tog-110" onclick="togglePress('110')"></button>
+    </div>
+    <div class="press-body" id="body-110">
+      <div class="field"><label>Цикл, мин</label><input type="number" id="cycle-110" placeholder="45" min="1"></div>
+      <div class="field"><label>Тонн / цикл</label><input type="number" id="ton-110" placeholder="18.5" step="0.1" min="0"></div>
+      <div class="field"><label>Ещё циклов (план)</label><input type="number" id="plan-110" placeholder="авто" min="0" step="1"></div>
+      <div class="field shift-field"><label>Shift, t (сейчас)</label><input type="number" id="shift-110" placeholder="142.8" step="0.1" min="0"></div>
+    </div>
+  </div>
+  <div class="press-card">
+    <div class="press-header">
+      <span class="press-name">FL-111</span>
+      <button class="toggle-btn active" id="tog-111" onclick="togglePress('111')"></button>
+    </div>
+    <div class="press-body" id="body-111">
+      <div class="field"><label>Цикл, мин</label><input type="number" id="cycle-111" placeholder="45" min="1"></div>
+      <div class="field"><label>Тонн / цикл</label><input type="number" id="ton-111" placeholder="18.5" step="0.1" min="0"></div>
+      <div class="field"><label>Ещё циклов (план)</label><input type="number" id="plan-111" placeholder="авто" min="0" step="1"></div>
+      <div class="field shift-field"><label>Shift, t (сейчас)</label><input type="number" id="shift-111" placeholder="165.9" step="0.1" min="0"></div>
+    </div>
+  </div>
+</div>
+
+<button class="calc-btn" onclick="calculate()">▶ РАССЧИТАТЬ</button>
+
+<div class="results" id="results">
+  <div class="result-card" id="res-110" style="display:none">
+    <div class="result-header">FL-110 — прогноз</div>
+    <div class="result-rows">
+      <div class="result-row"><span class="result-label">Осталось мин</span><span class="result-val" id="r110-rem">—</span></div>
+      <div class="result-row"><span class="result-label">Циклов успеет</span><span class="result-val" id="r110-cyc">—</span></div>
+      <hr class="result-divider">
+      <div class="result-row"><span class="result-label">+добавится, т</span><span class="result-val" id="r110-add">—</span></div>
+      <div class="result-row"><span class="result-label">Shift итого, т</span><span class="result-val" id="r110-total">—</span></div>
+    </div>
+  </div>
+  <div class="result-card" id="res-111" style="display:none">
+    <div class="result-header">FL-111 — прогноз</div>
+    <div class="result-rows">
+      <div class="result-row"><span class="result-label">Осталось мин</span><span class="result-val" id="r111-rem">—</span></div>
+      <div class="result-row"><span class="result-label">Циклов успеет</span><span class="result-val" id="r111-cyc">—</span></div>
+      <hr class="result-divider">
+      <div class="result-row"><span class="result-label">+добавится, т</span><span class="result-val" id="r111-add">—</span></div>
+      <div class="result-row"><span class="result-label">Shift итого, т</span><span class="result-val" id="r111-total">—</span></div>
+    </div>
+  </div>
+  <div class="result-card total" id="res-total" style="display:none">
+    <div class="result-header">⬛ ИТОГО ПО СМЕНЕ</div>
+    <div class="result-rows">
+      <div class="result-row"><span class="result-label">FL-110 + FL-111</span><span class="result-val big" id="r-grand">—<span class="unit">т</span></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const active={'110':true,'111':true};
+  const now=new Date();
+  document.getElementById('time-now').value=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+
+  function togglePress(id){
+    active[id]=!active[id];
+    document.getElementById('tog-'+id).classList.toggle('active',active[id]);
+    document.getElementById('body-'+id).classList.toggle('disabled',!active[id]);
+  }
+  function timeToMin(v){const[h,m]=v.split(':').map(Number);return h*60+m}
+  function fmt(n){return n.toFixed(1)}
+
+  function calculate(){
+    const endMin=timeToMin(document.getElementById('shift-end').value);
+    const nowMin=timeToMin(document.getElementById('time-now').value);
+    let remMin=endMin-nowMin;
+    if(remMin<0)remMin+=1440;
+    document.getElementById('results').classList.add('visible');
+    let grandTotal=0,anyActive=false;
+    ['110','111'].forEach(id=>{
+      const card=document.getElementById('res-'+id);
+      if(!active[id]){card.style.display='none';return}
+      const _c=parseFloat(document.getElementById('cycle-'+id).value);
+      const _t=parseFloat(document.getElementById('ton-'+id).value);
+      const _s=parseFloat(document.getElementById('shift-'+id).value);
+      const _p=parseFloat(document.getElementById('plan-'+id).value);
+      const cycle=isNaN(_c)?0:_c;
+      const ton=isNaN(_t)?0:_t;
+      const shift=isNaN(_s)?0:_s;
+      const planCycles=isNaN(_p)?null:Math.floor(_p);
+      if(shift===0&&cycle===0&&ton===0){card.style.display='none';return}
+      card.style.display='block';
+      anyActive=true;
+      const hasCycle=cycle>0&&ton>0;
+      const cycles=hasCycle?(planCycles!==null?planCycles:Math.floor(remMin/cycle)):(planCycles||0);
+      const added=(hasCycle||(planCycles!==null&&ton>0))?cycles*ton:0;
+      const total=shift+added;
+      grandTotal+=total;
+      document.getElementById('r'+id+'-rem').textContent=remMin+' мин';
+      document.getElementById('r'+id+'-cyc').textContent=hasCycle
+        ?cycles+' шт'+(planCycles!==null?' (план)':' (авто)')
+        :(cycles>0?cycles+' шт (план)':'— (стоит)');
+      document.getElementById('r'+id+'-add').textContent=fmt(added)+' т';
+      document.getElementById('r'+id+'-total').textContent=fmt(total)+' т';
+    });
+    const tc=document.getElementById('res-total');
+    if(anyActive){tc.style.display='block';document.getElementById('r-grand').innerHTML=fmt(grandTotal)+'<span class="unit">т</span>'}
+    else tc.style.display='none';
+  }
+</script>
+</body>
+</html>
